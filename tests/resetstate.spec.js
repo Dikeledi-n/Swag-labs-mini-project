@@ -1,12 +1,12 @@
 const {test, expect} = require ("@playwright/test")
+const LoginPage = require("../pages/loginpage")
 
 test("Verify that <Reset App State> button clears all the products items in cart.", async ({page}) => {
    
     //Login
     await page.goto("https://www.saucedemo.com/");
-    await page.getByPlaceholder("Username").fill("standard_user");
-    await page.getByPlaceholder("Password").fill("secret_sauce");
-    await page.locator('input[type="submit"]').click();
+    const loginPage = new LoginPage(page)
+    await loginPage.loginToApplication()
 
     //Add items to cart and verify badge exists
     await page.locator('button[name="add-to-cart-sauce-labs-backpack"]').click();
