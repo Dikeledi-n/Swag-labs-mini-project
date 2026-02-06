@@ -1,13 +1,21 @@
-const {test, expect, selectors} = require ("@playwright/test")
-const LoginPage = require("../pages/loginpage")
+const { test, expect } = require("@playwright/test");
+const LoginPage = require("../pages/loginpage");
+const ProductPage = require("../pages/productpage");
 
-test("Verify user is able to add product to cart", async ({page}) => {
-//Login and add to cart
-    await page.goto("https://www.saucedemo.com/")
-    const loginPage = new LoginPage(page)
-    await loginPage.loginToApplication()
-    await page.waitForTimeout(3000)
-    await expect(page).toHaveURL(/inventory.html/)
-    await page.locator('button[name="add-to-cart-sauce-labs-backpack"]').click();
+test("Verify user is able to add product to cart", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    const productPage = new ProductPage(page);
 
-})
+    await test.step("Login to SauceDemo", async () => {
+        await loginPage.openApp(); // Inherited from BasePage
+        await loginPage.loginToApplication();
+        await expect(page).toHaveURL(/inventory.html/);
+    });
+
+    await test.step("Add Backpack to Cart", async () => {
+        await productPage.addBackpackToCart();
+        
+        // Assert that the cart icon now shows 1 item
+        await expect(productPage.cartBadge).toHaveText("1");
+    });
+});

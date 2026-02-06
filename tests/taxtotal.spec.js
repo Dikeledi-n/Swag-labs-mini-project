@@ -1,45 +1,50 @@
-const {test, expect} = require ("@playwright/test")
-const LoginPage = require("../pages/loginpage")
-const CheckoutPage = require("../pages/checkoutpage")
+const { test, expect } = require("@playwright/test");
+const LoginPage = require("../pages/loginpage");
+const CheckoutPage = require("../pages/checkoutpage");
+const TestDataGenerator = require("../utility/testdatagenerator");
 
-test ("Verify <Total> is calculated correctly with tax inclusive", async ({page}) => {
+test("Verify <Total> is calculated correctly with tax inclusive", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    const checkoutPage = new CheckoutPage(page);
+    
+    // 1. Define the variable here so ALL steps can see it
+    let testUser; 
 
-    //Login and add items to cart
-    await page.goto("https://www.saucedemo.com/")
-    const loginPage = new LoginPage(page)
-    await loginPage.loginToApplication()
-    await page.waitForTimeout(1000)
-    await expect(page).toHaveURL(/inventory.html/)
-    await page.locator('button[name="add-to-cart-sauce-labs-backpack"]').click();
-    await page.locator('button[name="add-to-cart-sauce-labs-fleece-jacket"]').click();
+    await test.step("Login and navigate to Overview", async () => {
+        await loginPage.openApp();
+        await loginPage.loginToApplication();
+        
+        await page.locator('button[name="add-to-cart-sauce-labs-backpack"]').click();
+        await page.locator('button[name="add-to-cart-sauce-labs-fleece-jacket"]').click();
+        await page.locator('.shopping_cart_link').click();
+        await page.locator('[data-test="checkout"]').click();
+        
+        // 2. Assign the random data to the variable
+        testUser = TestDataGenerator.getCheckoutData();
 
-    //Cart and checkout
-    await page.goto("https://www.saucedemo.com/cart.html")
-    await page.waitForTimeout(2000)
-    await page.locator('button[name="checkout"]').click();
-    await page.goto("https://www.saucedemo.com/checkout-step-one.html")
-    const checkoutpage = new CheckoutPage(page)
-    await checkoutpage.checkoutFromApplication()
-    await expect(page).toHaveURL(/checkout-step-two.html/);
+        // 3. DON'T FORGET: You must actually fill the form!
+        await checkoutPage.fillInformation(
+            testUser.firstName, 
+            testUser.lastName, 
+            testUser.zipCode
+        );
+        
+        await expect(page).toHaveURL(/checkout-step-two.html/);
+    });
 
-    //Loop to get total with tax
-    const priceElements = await page.locator('.inventory_item_price').allTextContents();
-    let calculatedSubtotal = 0;
-    for (const priceText of priceElements) {
-        calculatedSubtotal += parseFloat(priceText.replace('$', ''));
-    }
-    const subtotalText = await page.locator('.summary_subtotal_label').textContent();
-    const taxText = await page.locator('.summary_tax_label').textContent();
-    const totalText = await page.locator('.summary_total_label').textContent();
+    await test.step("Validate Pricing Mathematics", async () => {
+        const itemSum = await checkoutPage.calculateItemsSum();
+        const subtotal = await checkoutPage.getSubtotal();
+        const tax = await checkoutPage.getTax();
+        const total = await checkoutPage.getTotal();
 
-    const displayedSubtotal = parseFloat(subtotalText.replace('Item total: $', ''));
-    const displayedTax = parseFloat(taxText.replace('Tax: $', ''));
-    const displayedTotal = parseFloat(totalText.replace('Total: $', ''));
+        // Verify Subtotal matches sum of individual items
+        expect(itemSum).toBe(subtotal);
 
-    // Check if the sum of items matches the subtotal
-    expect(calculatedSubtotal).toBe(displayedSubtotal);
-    const expectedFinalTotal = displayedSubtotal + displayedTax;
-    expect(displayedTotal).toBeCloseTo(expectedFinalTotal, 2);
-    console.log(`Summary: Subtotal(${displayedSubtotal}) + Tax(${displayedTax}) = Total(${displayedTotal})`);
+        // Verify Total = Subtotal + Tax
+        const expectedTotal = subtotal + tax;
+        expect(total).toBeCloseTo(expectedTotal, 2);
 
-})
+        console.log(`Verified for ${testUser.firstName}: ${subtotal} + ${tax} = ${total}`);
+    });
+});

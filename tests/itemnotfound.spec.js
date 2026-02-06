@@ -1,16 +1,25 @@
-const {test, expect} = require ("@playwright/test")
-const LoginPage = require("../pages/loginpage")
+const { test, expect } = require("@playwright/test");
+const LoginPage = require("../pages/loginpage");
+const ProductDetailsPage = require("../pages/productdetailspage");
 
-test("Verity that user gets <ITEM NOT FOUND> message when navigating to non existing product id item", async ({page}) => {
- //Login
-    await page.goto("https://www.saucedemo.com/")
-    const loginPage = new LoginPage(page)
-    await loginPage.loginToApplication()
-    await page.waitForTimeout(1000)
-    await page.goto("https://www.saucedemo.com/inventory-item.html?id=9");
-    await page.waitForTimeout(3000)
-    const errorMessage = page.getByText("ITEM NOT FOUND");
-    await page.waitForTimeout(2000)
-    await expect(errorMessage).toBeVisible();
-    
-})
+test("Verify that user gets <ITEM NOT FOUND> message for non-existing product", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    const detailsPage = new ProductDetailsPage(page);
+
+    await test.step("Login to SauceDemo", async () => {
+        await loginPage.openApp();
+        await loginPage.loginToApplication();
+ 
+        await expect(page).toHaveURL(/inventory.html/);
+    });
+
+    await test.step("Navigate to Invalid Product ID", async () => {
+        await detailsPage.navigateToInvalidItem("9");
+    });
+
+    await test.step("Verify Error Message is Displayed", async () => {
+        await expect(detailsPage.notFoundMessage).toBeVisible();
+        
+        await expect(detailsPage.backToProductsBtn).toBeVisible();
+    });
+});

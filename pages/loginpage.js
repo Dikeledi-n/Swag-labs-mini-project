@@ -1,19 +1,18 @@
-class LoginPage
-{
+// pages/LoginPage.js
+const BasePage = require("../pages/basepage");
 
-    constructor(page)
-    {
-        this.page=page
-        this.username="//input[@placeholder='Username']"
-        this.password="//input[@placeholder='Password']"
-        this.loginbutton="//input[@id='login-button']"
+class LoginPage extends BasePage {
+    constructor(page) {
+        super(page);
+        this.usernameInput = page.locator("//input[@placeholder='Username']");
+        this.passwordInput = page.locator("//input[@placeholder='Password']");
+        this.loginButton = page.locator("//input[@id='login-button']");
     }
 
-    async loginToApplication()
-    {
-        await this.page.fill(this.username,"standard_user")
-        await this.page.fill(this.password,"secret_sauce")
-        await this.page.click(this.loginbutton)
+    async loginToApplication(user = "standard_user", pass = "secret_sauce") {
+        await this.usernameInput.fill(user);
+        await this.passwordInput.fill(pass);
+        await this.loginButton.click();
     }
 }
-module.exports=LoginPage;
+module.exports = LoginPage;

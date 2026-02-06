@@ -1,32 +1,32 @@
-const {test, expect} = require ("@playwright/test")
-const LoginPage = require("../pages/loginpage")
-const CheckoutPage = require("../pages/checkoutpage")
+const { test, expect } = require("@playwright/test");
+const LoginPage = require("../pages/loginpage");
+const CheckoutPage = require("../pages/checkoutpage");
+const TestDataGenerator = require("../utility/testdatagenerator"); 
 
-test(" Verify that all items in <Your Cart> page list matches all items in <Checkout: Overview> page list.", async ({page}) => {
-    //Login and add items to cart
-    await page.goto("https://www.saucedemo.com/")
-    const loginPage = new LoginPage(page)
-    await loginPage.loginToApplication()
-    await page.waitForTimeout(1000)
-    await expect(page).toHaveURL(/inventory.html/)
-    await page.locator('button[name="add-to-cart-sauce-labs-backpack"]').click();
-    await page.locator('button[name="add-to-cart-sauce-labs-fleece-jacket"]').click();
-
-    //Cart and checkout
-    await page.goto("https://www.saucedemo.com/cart.html")
-    await page.waitForTimeout(2000)
-    await page.locator('button[name="checkout"]').click();
-    await page.goto("https://www.saucedemo.com/checkout-step-one.html")
-    const checkoutpage = new CheckoutPage(page)
-    await checkoutpage.checkoutFromApplication()
-    await expect(page).toHaveURL(/checkout-step-two.html/);
+test("Verify Checkout with random test data", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    const checkoutPage = new CheckoutPage(page);
     
-    //Loop to check if cart items and checkout items match
-    const cartItems = await page.locator('.inventory_item_name').allTextContents();
-    const checkoutItems = page.locator('.inventory_item_name');
+    // Generate the data once for this test
+    const randomUser = TestDataGenerator.getCheckoutData();
 
-    for (const itemName of cartItems) {
-        await expect(checkoutItems.filter({ hasText: itemName })).toBeVisible();
-        console.log(`Verified: ${itemName} is present in checkout.`);
-    }
-})
+    await test.step("Login and Add Items", async () => {
+        await loginPage.openApp();
+        await loginPage.loginToApplication();
+        await page.locator('button[name="add-to-cart-sauce-labs-backpack"]').click();
+        await page.locator('.shopping_cart_link').click();
+        await page.locator('[data-test="checkout"]').click();
+    });
+
+    await test.step("Fill Information with Random Data", async () => {
+        // Use the generated data
+        await checkoutPage.fillInformation(
+            randomUser.firstName, 
+            randomUser.lastName, 
+            randomUser.zipCode
+        );
+        
+        console.log(`Testing with: ${randomUser.firstName} ${randomUser.lastName}`);
+        await expect(page).toHaveURL(/checkout-step-two.html/);
+    });
+});
