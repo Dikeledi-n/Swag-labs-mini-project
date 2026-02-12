@@ -4,7 +4,7 @@ const Utils = require("../utility/utils")
 class CheckoutPage extends BasePage {
     constructor(page) {
         super(page);
-        // Step 1: Information
+    
         this.priceElements = page.locator('.inventory_item_price');
         this.subtotalLabel = page.locator('.summary_subtotal_label');
         this.taxLabel = page.locator('.summary_tax_label');
@@ -14,7 +14,7 @@ class CheckoutPage extends BasePage {
         this.postalCode = page.locator('[data-test="postalCode"]');
         this.continueBtn = page.locator('[data-test="continue"]');
        
-        // Step 2: Overview
+    
         this.inventoryItemNames = page.locator('.inventory_item_name');
     }
 
@@ -42,7 +42,6 @@ class CheckoutPage extends BasePage {
         return parseFloat(text.replace(/[^\d.]/g, ''));
     }
 
-    // ADD THESE METHODS BELOW:
     async getSubtotal() {
         const text = await this.subtotalLabel.textContent();
         return Utils.parseCurrency(text);
